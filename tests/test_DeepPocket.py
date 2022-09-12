@@ -58,11 +58,11 @@ def test_model_1():
         assert True
     
 # Predict_test
-def test_get_model_gmaker_eprovider():
-    '''check the output of get_model_gmaker_eprovider'''
-    try:
-        predict.get_model_gmaker_eprovider('tests/data/1A0S.types', 1, Model(),'sdf','sdfasd')
-    except AssertionError:
-        assert True
-    else:
-        assert False
+# def test_get_model_gmaker_eprovider():
+#     '''check the output of get_model_gmaker_eprovider'''
+#     try:
+#         predict.get_model_gmaker_eprovider('tests/data/1A0S.types', 1, Model(),'sdf','sdfasd')
+#     except AssertionError:
+#         assert True
+#     else:
+#         assert False
