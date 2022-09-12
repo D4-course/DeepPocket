@@ -1,0 +1,39 @@
+HEADER
+HEADER This is a pdb format file writen by the programm fpocket.                 
+HEADER It represents the atoms contacted by the voronoi vertices of the pocket.  
+HEADER                                                                           
+HEADER Information about the pocket    28:
+HEADER 0  - Pocket Score                      : -0.0553
+HEADER 1  - Drug Score                        : 0.0005
+HEADER 2  - Number of alpha spheres           :    20
+HEADER 3  - Mean alpha-sphere radius          : 4.0557
+HEADER 4  - Mean alpha-sphere Solvent Acc.    : 0.5331
+HEADER 5  - Mean B-factor of pocket residues  : 0.4742
+HEADER 6  - Hydrophobicity Score              : 45.0000
+HEADER 7  - Polarity Score                    :     2
+HEADER 8  - Amino Acid based volume Score     : 5.0000
+HEADER 9  - Pocket volume (Monte Carlo)       : 265.6208
+HEADER 10  -Pocket volume (convex hull)       : 6.1393
+HEADER 11 - Charge Score                      :     1
+HEADER 12 - Local hydrophobic density Score   : 10.0000
+HEADER 13 - Number of apolar alpha sphere     :    11
+HEADER 14 - Proportion of apolar alpha sphere : 0.5500
+ATOM   3685   CA ILE B 896       1.326  19.022  17.768  0.00  0.00           C 0
+ATOM   3676    O PHE B 895       0.590  20.599  15.651  0.53  4.29           O 0
+ATOM   1697    O ILE A 896      -3.068  13.505  13.662  0.46  7.50           O 0
+ATOM   3687    O ILE B 896      -0.498  20.197  18.805  0.48  9.64           O 0
+ATOM   3682  CE2 PHE B 895       0.518  17.113  12.566  0.00  0.00           C 0
+ATOM   1692  CE2 PHE A 895      -1.211  14.796  20.444  0.00  0.00           C 0
+ATOM   1695   CA ILE A 896      -1.343  12.848  15.241  0.00  0.00           C 0
+ATOM   1699  CG1 ILE A 896       1.035  13.306  15.469  0.00  0.00           C 0
+ATOM   1686    O PHE A 895      -3.526  12.652  17.062  0.00  0.00           O 0
+ATOM   1691  CE1 PHE A 895      -3.171  13.891  21.527  0.00  0.00           C 0
+ATOM   1693   CZ PHE A 895      -2.318  14.977  21.300  0.00  0.00           C 0
+ATOM   1716   OG SER A 898      -6.472  12.917  17.277  0.00  0.00           O 0
+ATOM   1722   CG ARG A 899      -8.690  15.678  14.473  0.00  0.00           C 0
+ATOM   3713   CD ARG B 899      -5.819  22.557  16.712  0.00  0.00           C 0
+ATOM   1690  CD2 PHE A 895      -0.965  13.562  19.807  0.00  0.00           C 0
+ATOM   3680  CD2 PHE B 895       1.572  17.693  13.348  0.00  0.00           C 0
+ATOM   3689  CG1 ILE B 896       2.497  16.871  18.134  0.00  0.00           C 0
+TER
+END
