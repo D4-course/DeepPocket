@@ -117,6 +117,7 @@ If you find this useful please cite the paper mentioned above.
 
     }
 
+-----------------------------------------
 
 ## Steps to fork Fpocket
 ```
@@ -131,9 +132,14 @@ sudo make install;
 docker build -t dp .
 ```
 
-## Creating the docker container 
+## Creating the docker container (without utlising system's GPU)
 ```
 docker run -it --name myapp --rm --volume $(pwd):/usr/src/app --net=host dp:latest sh
+```
+
+## Creating the docker container
+```
+docker run -it --name myapp --rm --volume $(pwd):/usr/src/app --net=host --gpus all dp:latest sh
 ```
 *Note: This uses the GPUs available and also uses the pwd where the docker container is being executed.
 
