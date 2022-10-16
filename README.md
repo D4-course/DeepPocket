@@ -18,7 +18,7 @@ sh run.sh
 ```
 - Navigate to the network or external URL that will be displayed on the terminal
 ```
-(For Refernce only)
+
 You can now view your Streamlit app in your browser.
 
   Network URL: http://10.42.0.88:8501
@@ -29,4 +29,5 @@ You can now view your Streamlit app in your browser.
 - If you would like to view the segmented pockets, tick the ```segment the centers?``` option
 - Click on ```predict``` to get a list of top pockets for the provided protein. This might upto 1min depending your computer architecture.
 - An interactive structure of the input protein can be viewed along with the list of centers. 
-- Segmented pockets (if chosen) can be downloaded as a ```.zip``` file by clicking on the download button.
+- Segmented pockets (if chosen) can be downloaded as a ```.zip``` file by clicking on the download button. Please see the readme in zip folder for visualisation instructions. 
+(For Refernce only)![segmented_pocket](https://user-images.githubusercontent.com/57574795/196051563-ad175fe5-7052-4eaf-9bd3-9f7d01304432.png)
