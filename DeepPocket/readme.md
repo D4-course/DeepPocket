@@ -3,7 +3,7 @@
 This folder contains the code for visualising the outputs of the DeepPocket algorithm. For visualtion, Install pymol tool. For installation refer to the following url. http://pymol.org/2/.
 
 ```
-    .dx files are the volumetric data files. These files are used to visualise the segmented pockets using DeepPocket.
+    .dx files are the segmented pockets. These files are used to visualise the segmented pockets using DeepPocket.
     protein_nowat_pocketX.pdb files are the residue files. These files are used to visualise the residues.
 ```
 
