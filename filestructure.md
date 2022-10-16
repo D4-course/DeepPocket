@@ -1,3 +1,4 @@
+```
 .
 ├── DeepPocket
 │   ├── backend.py
@@ -36,10 +37,9 @@
 │   │       ├── bary_centers.txt
 │   │       ├── bary_centers.types
 │   │       ├── pocket10_atm.pdb
-		'''
 │   │       └── pocket9_vert.pqr
 │   ├── protein_nowat.pdb
 │   ├── protein.pdb
 │   └── test_DeepPocket.py
 └── wrap.sh
-
+```
