@@ -168,6 +168,7 @@ async def segment_pockets_n( file: UploadFile = File(...), num_pockets: int = 10
                 zipObj.write(f)
             for f in pdb_files:
                 zipObj.write(f)
+            zipObj.write('readme.md')
 
         # delete all .pdb and .dx and .gninatypes files in the current directory
         for file in os.listdir():
@@ -181,7 +182,8 @@ async def segment_pockets_n( file: UploadFile = File(...), num_pockets: int = 10
                 os.remove('./protein_nowat_out/'+file)
         # return pocket.zip and text file with pocket locations
         return  StreamingResponse(io.BytesIO(open('pockets.zip', 'rb').read()), media_type="application/zip", headers={"Content-Disposition": "attachment;filename=pockets.zip"} )
-    except:
+    except Exception as e:
+        print(e)
         resp = 'No pockets found/ Invalid protein'
         try:
             for file in os.listdir():

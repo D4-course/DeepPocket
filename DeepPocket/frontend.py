@@ -69,11 +69,11 @@ if(predict):
         with col2:
             if(seg_status):
                 df = pd.read_csv('pocket_locations.csv',names=["x coordinate", "y coordinate", "z coordinate", "Binding Site Probability"])
-                for file in os.listdir():
-                    if file.endswith('.dx') or file.endswith('.csv'):
-                        os.remove(file)
             else:
                 df = pd.read_csv('temp.csv',names=["x coordinate", "y coordinate", "z coordinate", "Binding Site Probability"])
+            for file in os.listdir():
+                if file.endswith('.dx') or file.endswith('.csv'):
+                    os.remove(file)
             col2.write(df)
             col2.text("List of centers returned by the algorithm: (sorted in decreasing order of probabilities)")
     else:
