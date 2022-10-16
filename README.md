@@ -29,3 +29,4 @@ You can now view your Streamlit app in your browser.
 - If you would like to view the segmented pockets, tick the ```segment the centers?``` option
 - Click on ```predict``` to get a list of top pockets for the provided protein. This might upto 1min depending your computer architecture.
 - An interactive structure of the input protein can be viewed along with the list of centers. 
+- Segmented pockets (if chosen) can be downloaded as a ```.zip``` file by clicking on the download button.
