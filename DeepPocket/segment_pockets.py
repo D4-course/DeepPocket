@@ -1,36 +1,31 @@
 '''
 Segment out pocket shapes from top ranked pockets
 '''
-# import sys
-# import os
-# import logging
-import argparse
-# import wandb
 import torch
-from torch import nn
+import torch.nn as nn
+from unet import Unet
 import numpy as np
-
+import logging
+import argparse
+import wandb
+import sys
+import os
 import molgrid
-# from skimage.morphology import binary_dilation
-# from skimage.morphology import cube
-# pylint: disable=E1101,R0913,R0914
+from skimage.morphology import binary_dilation
+from skimage.morphology import cube
 from skimage.morphology import closing
 from skimage.segmentation import clear_border
 from skimage.measure import label
 from scipy.spatial.distance import cdist
-from prody import writePDB, parsePDB
-from unet import Unet
+from prody import *
 
-def preprocess_output(inp, threshold):
-    '''
-    Preprocess output from UNET using threshold, dilation, and clearing border
-    '''
-    inp[inp>=threshold]=1
-    inp[inp!=1]=0
-    inp=inp.numpy()
-    bw_ = closing(inp).any(axis=0)
+def preprocess_output(input, threshold):
+    input[input>=threshold]=1
+    input[input!=1]=0
+    input=input.numpy()
+    bw = closing(input).any(axis=0)
     # remove artifacts connected to border
-    cleared = clear_border(bw_)
+    cleared = clear_border(bw)
 
     # label regions
     label_image, num_labels = label(cleared, return_num=True)
@@ -49,22 +44,16 @@ def preprocess_output(inp, threshold):
     return torch.tensor(label_image,dtype=torch.float32)
 
 def get_model_gmaker_eproviders(args):
-    '''
-    Prepare gridmaker and dataproviders
-    '''
     # test example provider
-    eptest_l = molgrid.ExampleProvider(shuffle=False, stratify_receptor=False,
-                        iteration_scheme=molgrid.IterationScheme.LargeEpoch,default_batch_size=1)
-    eptest_l.populate(args.test_types)
+    eptest = molgrid.ExampleProvider(shuffle=False, stratify_receptor=False,iteration_scheme=molgrid.IterationScheme.LargeEpoch,default_batch_size=1)
+    eptest.populate(args.test_types)
     # gridmaker with defaults
-    gmaker_img_l = molgrid.GridMaker(dimension=32)
+    gmaker_img = molgrid.GridMaker(dimension=32)
 
-    return  gmaker_img_l, eptest_l
+    return  gmaker_img, eptest
 
-def output_coordinates(tensor,center,dimension=16.25,resolution=0.5):
-    '''
-    get coordinates of mask from predicted mask
-    '''
+def Output_Coordinates(tensor,center,dimension=16.25,resolution=0.5):
+    #get coordinates of mask from predicted mask
     tensor=tensor.numpy()
     indices = np.argwhere(tensor>0).astype('float32')
     indices *= resolution
@@ -73,10 +62,8 @@ def output_coordinates(tensor,center,dimension=16.25,resolution=0.5):
     indices -= dimension
     return indices
 
-def predicted_aa(indices,prot_prody,distance):
-    '''
-    amino acids from mask distance thresholds
-    '''
+def predicted_AA(indices,prot_prody,distance):
+    #amino acids from mask distance thresholds
     prot_coords = prot_prody.getCoords()
     ligand_dist = cdist(indices, prot_coords)
     binding_indices = np.where(np.any(ligand_dist <= distance, axis=0))
@@ -86,15 +73,13 @@ def predicted_aa(indices,prot_prody,distance):
     prot_binding_indices = sorted(list(set(prot_binding_indices)))
     return prot_binding_indices
 
-def output_pocket_pdb(pocket_name,prot_prody,pred_aa):
-    '''
-    output pocket pdb
-    skip if no amino acids predicted
-    '''
-    if len(pred_aa)==0:
+def output_pocket_pdb(pocket_name,prot_prody,pred_AA):
+    #output pocket pdb
+    #skip if no amino acids predicted
+    if len(pred_AA)==0:
         return
     sel_str= 'resindex '
-    for i in pred_aa:
+    for i in pred_AA:
         sel_str+= str(i)+' or resindex '
     sel_str=' '.join(sel_str.split()[:-2])
     pocket=prot_prody.select(sel_str)
@@ -117,24 +102,20 @@ def parse_args(argv=None):
                         help="Output channels for predicted masks, default 1", default=1)
     parser.add_argument('--dx_name', type=str, required=True,
                         help="dx file name")
-    parser.add_argument('-p','--protein', type=str, required=False,
-                         help="pdb file for predicting binding sites")
+    parser.add_argument('-p','--protein', type=str, required=False, help="pdb file for predicting binding sites")
     parser.add_argument('--mask_dist', type=float, required=False,
                         help="distance from mask to residues", default=3.5)
-    args_l = parser.parse_args(argv)
+    args = parser.parse_args(argv)
 
-    argdict = vars(args_l)
+    argdict = vars(args)
     line = ''
     for (name, val) in list(argdict.items()):
         if val != parser.get_default(name):
-            line += f' --{name}={val}'
+            line += ' --%s=%s' % (name, val)
 
-    return (args_l, line)
+    return (args, line)
 
 def test(model, test_loader, gmaker_img,device,dx_name, args):
-    '''
-    test model on test_loader and save predicted masks
-    '''
     if args.rank==0:
         return
     count=0
@@ -150,22 +131,20 @@ def test(model, test_loader, gmaker_img,device,dx_name, args):
         # update float_labels with center and index values
         batch.extract_labels(float_labels)
         centers = float_labels[:, 1:]
-        for b_ind in range(1):
-            center = molgrid.float3(float(centers[b_ind][0]),
-                                     float(centers[b_ind][1]), float(centers[b_ind][2]))
-            # Update input tensor with b_ind'th datapoint of the batch
-            gmaker_img.forward(center, batch[b_ind].coord_sets[0], input_tensor[b_ind])
-        # Take only the first 14 channels as that is for proteins,
-        #  other 14 are ligands and will remain 0.
+        for b in range(1):
+            center = molgrid.float3(float(centers[b][0]), float(centers[b][1]), float(centers[b][2]))
+            # Update input tensor with b'th datapoint of the batch 
+            gmaker_img.forward(center, batch[b].coord_sets[0], input_tensor[b])
+        # Take only the first 14 channels as that is for proteins, other 14 are ligands and will remain 0.
         masks_pred = model(input_tensor[:, :14])
         masks_pred=masks_pred.detach().cpu()
         masks_pred=preprocess_output(masks_pred[0], args.threshold)
         # predict binding site residues
-        pred_coords = output_coordinates(masks_pred, center)
-        pred_aa = predicted_aa(pred_coords, prot_prody, args.mask_dist)
+        pred_coords = Output_Coordinates(masks_pred, center)
+        pred_aa = predicted_AA(pred_coords, prot_prody, args.mask_dist)
         output_pocket_pdb(dx_name+'_pocket'+str(count)+'.pdb',prot_prody,pred_aa)
         masks_pred=masks_pred.cpu()
-        # Output predicted mask in .dx format
+        # Output predicted mask in .dx format 
         masks_pred=molgrid.Grid3f(masks_pred)
         molgrid.write_dx(dx_name+'_'+str(count)+'.dx',masks_pred,center,0.5,1.0)
         if count>=args.rank:

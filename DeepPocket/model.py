@@ -1,14 +1,8 @@
-'''
-    DeepPocket Classfication Model Architecture
-'''
-from torch import nn
-#pylint: disable=R0902
+import torch.nn as nn
+
 class Model(nn.Module):
-    '''
-    DeepPocket Classfication Model Architecture
-    '''
     def __init__(self):
-        super().__init__()
+        super(Model, self).__init__()
 
         self.unit0_conv = nn.Conv3d(14,32,
                                kernel_size=3,stride=1, bias=True)
@@ -40,11 +34,8 @@ class Model(nn.Module):
         self.final_fc = nn.Linear(16000, 2)
         #self.final_func = nn.LogSoftmax()
 
-    def forward(self, inp):
-        '''
-        Forward propagation from input to output
-        '''
-        out = self.unit0_conv(inp)
+    def forward(self, x):
+        out = self.unit0_conv(x)
         out = self.unit0_func(out)
 
         out = self.unit1_pool(out)

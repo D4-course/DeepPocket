@@ -1,42 +1,31 @@
-'''
-Benchmark DeepPocket segmentation model on Zhao. et. al. benchmark.
-Prints out IOUs and success rates of ratio thresholds for
-different distances and ratio thresholds
-'''
-# import sys
-import os
-# import logging
-import argparse
-# import wandb
-
-from prody import parsePDB
+'''Benchmark DeepPocket segmentation model on Zhao. et. al. benchmark. Prints out IOUs and success rates of ratio thresholds for different distances and ratio thresholds'''
+from prody import *
 import torch
-from torch import nn
+import torch.nn as nn
+from unet import Unet
 import numpy as np
-
+import logging
+import argparse
+import wandb
+import sys
+import os
 import molgrid
-# from skimage.morphology import binary_dilation
-# from skimage.morphology import cube
+from skimage.morphology import binary_dilation
+from skimage.morphology import cube
 from skimage.morphology import closing
 from skimage.segmentation import clear_border
 from skimage.measure import label
 from scipy.spatial.distance import cdist
 from rdkit.Chem import AllChem as Chem
-# from rdkit.Chem import AllChem
-# pylint: disable=E1101,W0621,R0913,R0914
-from unet import Unet
+from rdkit.Chem import AllChem
 
-
-def preprocess_output(inp, threshold):
-    '''
-    Preprocess input tensor with threshold and dilation
-    '''
-    inp[inp>=threshold]=1
-    inp[inp!=1]=0
-    inp=inp.numpy()
-    bw_ = closing(input).any(axis=0)
+def preprocess_output(input, threshold):
+    input[input>=threshold]=1
+    input[input!=1]=0
+    input=input.numpy()
+    bw = closing(input).any(axis=0)
     # remove artifacts connected to border
-    cleared = clear_border(bw_)
+    cleared = clear_border(bw)
 
     # label regions
     label_image, num_labels = label(cleared, return_num=True)
@@ -55,23 +44,16 @@ def preprocess_output(inp, threshold):
     return torch.tensor(label_image,dtype=torch.float32)
 
 def get_model_gmaker_eproviders(args):
-    '''Return model, gmaker, and eprovider'''
     # test example provider
-    eptest = molgrid.ExampleProvider(shuffle=False,
-                        stratify_receptor=False,
-                        iteration_scheme=molgrid.IterationScheme.LargeEpoch,
-                        default_batch_size=1,data_root=args.data_dir,
-                        recmolcache=args.test_recmolcache)
+    eptest = molgrid.ExampleProvider(shuffle=False, stratify_receptor=False,iteration_scheme=molgrid.IterationScheme.LargeEpoch,default_batch_size=1,data_root=args.data_dir,recmolcache=args.test_recmolcache)
     eptest.populate(args.test_types)
     # gridmaker with defaults
     gmaker_img = molgrid.GridMaker(dimension=32)
 
     return  gmaker_img, eptest
 
-def output_coordinates(tensor,center,dimension=16.25,resolution=0.5):
-    '''
-    get coordinates of mask from predicted mask
-    '''
+def Output_Coordinates(tensor,center,dimension=16.25,resolution=0.5):
+    #get coordinates of mask from predicted mask
     tensor=tensor.numpy()
     indices = np.argwhere(tensor>0).astype('float32')
     indices *= resolution
@@ -80,13 +62,11 @@ def output_coordinates(tensor,center,dimension=16.25,resolution=0.5):
     indices -= dimension
     return indices
 
-def binding_site_aa(ligand,prot_prody,distance):
-    '''
-    amino acids from ligand distance threshold
-    '''
+def binding_site_AA(ligand,prot_prody,distance):
+    #amino acids from ligand distance threshold
     prot_coords = prot_prody.getCoords()
-    conf = ligand.GetConformer()
-    ligand_coords = conf.GetPositions()
+    c = ligand.GetConformer()
+    ligand_coords = c.GetPositions()
     ligand_dist = cdist(ligand_coords, prot_coords)
     binding_indices = np.where(np.any(ligand_dist <= distance, axis=0))
     #Get protein residue indices involved in binding site
@@ -95,10 +75,8 @@ def binding_site_aa(ligand,prot_prody,distance):
     prot_binding_indices = sorted(list(set(prot_binding_indices)))
     return prot_binding_indices
 
-def predicted_aa(indices,prot_prody,distance):
-    '''
-        amino acids from mask distance thresholds
-    '''
+def predicted_AA(indices,prot_prody,distance):
+    #amino acids from mask distance thresholds
     prot_coords = prot_prody.getCoords()
     ligand_dist = cdist(indices, prot_coords)
     binding_indices = np.where(np.any(ligand_dist <= distance, axis=0))
@@ -109,15 +87,9 @@ def predicted_aa(indices,prot_prody,distance):
     return prot_binding_indices
 
 def intersection(lst1, lst2):
-    '''
-    intersection of two lists
-    '''
     return list(set(lst1) & set(lst2))
 
 def union(lst1, lst2):
-    '''
-    union of two lists
-    '''
     return list(set().union(lst1,lst2))
 
 def parse_args(argv=None):
@@ -143,55 +115,45 @@ def parse_args(argv=None):
     line = ''
     for (name, val) in list(argdict.items()):
         if val != parser.get_default(name):
-            line += f' --{name}={val}'
+            line += ' --%s=%s' % (name, val)
 
     return (args, line)
 
-def test(model, test_loader, gmaker_img,device,
-             args,ligand_distances,mask_distances,ratios,count_values,ious):
-    '''
-    Test model on test set with given gridmaker, ligand_distances,
-     mask_distances, ratios, count_values, and ious
-    '''
+def test(model, test_loader, gmaker_img,device, args,ligand_distances,mask_distances,ratios,count_values,IOUS):
     with torch.no_grad():
-        # count=0
+        count=0
         model.eval()
         dims = gmaker_img.grid_dimensions(test_loader.num_types())
         tensor_shape = (1,) + dims
         #create tensor for input, centers and indices
-        input_tensor = torch.zeros(tensor_shape, dtype=torch.float32,
-                             device=device, requires_grad=True)
+        input_tensor = torch.zeros(tensor_shape, dtype=torch.float32, device=device, requires_grad=True)
         float_labels = torch.zeros((1, 4), dtype=torch.float32, device=device)
         for batch in test_loader:
             # update float_labels with center and index values
             batch.extract_labels(float_labels)
             centers = float_labels[:, 1:]
-            for b_ind in range(1):
+            for b in range(1):
                 #get protein and ligand files
-                protein_file=os.path.join(args.data_dir,
-                                batch[b_ind].coord_sets[0].src.replace('.gninatypes','.pdb'))
-                ligand_file=os.path.join(args.data_dir,
-                    batch[b_ind].coord_sets[0].src.replace('protein_nowat.gninatypes','ligand.sdf'))
+                protein_file=os.path.join(args.data_dir,batch[b].coord_sets[0].src.replace('.gninatypes','.pdb'))
+                ligand_file=os.path.join(args.data_dir,batch[b].coord_sets[0].src.replace('protein_nowat.gninatypes','ligand.sdf'))
                 #load in protein and ligand
                 ligand=Chem.MolFromMolFile(ligand_file,sanitize=False)
                 prot_prody=parsePDB(protein_file)
-                center = molgrid.float3(float(centers[b_ind][0]),
-                                         float(centers[b_ind][1]), float(centers[b_ind][2]))
-                # Update input tensor with b_ind'th datapoint of the batch
-                gmaker_img.forward(center, batch[b_ind].coord_sets[0], input_tensor[b_ind])
-            # Take only the first 14 channels as that is for proteins,
-            #  other 14 are ligands and will remain 0.
+                center = molgrid.float3(float(centers[b][0]), float(centers[b][1]), float(centers[b][2]))
+                # Update input tensor with b'th datapoint of the batch
+                gmaker_img.forward(center, batch[b].coord_sets[0], input_tensor[b])
+            # Take only the first 14 channels as that is for proteins, other 14 are ligands and will remain 0.
             masks_pred = model(input_tensor[:, :14])
             masks_pred=masks_pred.detach().cpu()
             masks_pred=preprocess_output(masks_pred[0], args.threshold)
-            pred_coords = output_coordinates(masks_pred, center)
+            pred_coords = Output_Coordinates(masks_pred, center)
             for ld in range(len(ligand_distances)):
-                true_aa = binding_site_aa(ligand, prot_prody, ligand_distances[ld])
+                true_aa = binding_site_AA(ligand, prot_prody, ligand_distances[ld])
                 for md in range(len(mask_distances)):
-                    pred_aa = predicted_aa(pred_coords, prot_prody, mask_distances[md])
+                    pred_aa = predicted_AA(pred_coords, prot_prody, mask_distances[md])
                     intersect = intersection(pred_aa, true_aa)
                     un = union(pred_aa, true_aa)
-                    ious[ld][md]+=len(intersect)/len(un)
+                    IOUS[ld][md]+=len(intersect)/len(un)
                     for r in range(len(ratios)):
                         if len(intersect)/len(true_aa)>=ratios[r]:
                             count_values[ld][r][md]+=1    
@@ -211,17 +173,12 @@ if __name__ == "__main__":
     model.cuda()
     model = nn.DataParallel(model)
     model.load_state_dict(checkpoint['model_state_dict'])
-    count_values=test(model, eptest, gmaker_img,device,
-                    args,ligand_distances,mask_distances,ratios,count_values,
-                    IOUS)
+    count_values=test(model, eptest, gmaker_img,device,args,ligand_distances,mask_distances,ratios,count_values,IOUS)
     count_values/=4414
     IOUS/=4414
-    # for ld,ld_val in e
     for ld in range(len(ligand_distances)):
         for md in range(len(mask_distances)):
-            print("ligand distance ", 
-                    ligand_distances[ld], "mask_distance ",
-                     mask_distances[md], "IOU ", IOUS[ld][md])
+            print("ligand distance ", ligand_distances[ld], "mask_distance ", mask_distances[md], "IOU ", IOUS[ld][md])
             for r in range(len(ratios)):
                 print("ligand distance ", ligand_distances[ld], "mask_distance ", mask_distances[md], "ratio ", ratios[r], "value ",count_values[ld][r][md])
 

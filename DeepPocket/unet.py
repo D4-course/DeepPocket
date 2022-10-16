@@ -1,80 +1,51 @@
-'''
-Unet architecture for segmentation of pocket structures.
-'''
 import torch
-from torch import nn
-# import torch.nn.functional as F
-# pylint: disable=E1101,R0913,R0902
+import torch.nn as nn
+import torch.nn.functional as F
+
 
 class DoubleConv(nn.Module):
-    '''
-    Unet architecture for segmentation of pocket structures.
-    '''
     def __init__(self, in_channels, out_channels, kernel_size, padding=1):
         super().__init__()
-        self.block = nn.Sequential(
-                                nn.Conv3d(in_channels, out_channels, kernel_size, padding=padding),
-                                nn.BatchNorm3d(out_channels),
-                                nn.ReLU(),
-                                nn.Conv3d(out_channels, out_channels, kernel_size, padding=padding),
-                                nn.BatchNorm3d(out_channels),
-                                nn.ReLU())
+        self.block = nn.Sequential(nn.Conv3d(in_channels, out_channels, kernel_size, padding=padding),
+                                   nn.BatchNorm3d(out_channels),
+                                   nn.ReLU(),
+                                   nn.Conv3d(out_channels, out_channels, kernel_size, padding=padding),
+                                   nn.BatchNorm3d(out_channels),
+                                   nn.ReLU())
 
-    def forward(self, inp):
-        '''
-        Unet Forward pass
-        '''
-        out = self.block(inp)
+    def forward(self, x):
+        out = self.block(x)
         return out
 
 
 class Down(nn.Module):
-    '''
-    Convolutional block for the Unet architecture
-    '''
     def __init__(self, in_channels, out_channels, kernel_size_pad,stride=2):
         super().__init__()
-        self.block = nn.Sequential(
-                            nn.MaxPool3d(kernel_size_pad, stride=stride),
-                             DoubleConv(in_channels, out_channels, 3))
+        self.block = nn.Sequential(nn.MaxPool3d(kernel_size_pad, stride=stride), DoubleConv(in_channels, out_channels, 3))
 
-    def forward(self, inp):
-        '''
-        Forward propagation from input to output
-        '''
-        out = self.block(inp)
+    def forward(self, x):
+        out = self.block(x)
         return out
 
 
 class Up(nn.Module):
-    '''
-        Deconvolutional block for the Unet architecture
-    '''
-    def __init__(self, in_channels, out_channels,
-                     kernel_size_up,padding=0,stride=2, out_pad=0, upsample=None):
+    def __init__(self, in_channels, out_channels, kernel_size_up,padding=0,stride=2, out_pad=0, upsample=None):
         super().__init__()
         if upsample:
             self.up_s = nn.Upsample(scale_factor=2, mode=upsample, align_corners=True)
         else:
-            self.up_s = nn.ConvTranspose3d(in_channels, in_channels // 2,
-                                    kernel_size_up, stride=stride, padding=padding,
+            self.up_s = nn.ConvTranspose3d(in_channels, in_channels // 2, kernel_size_up, stride=stride, padding=padding,
                                            output_padding=out_pad)
 
-        self.conv_t = DoubleConv(in_channels, out_channels, 3)
+        self.convT = DoubleConv(in_channels, out_channels, 3)
 
-    def forward(self, layer1, layer2):
-        '''
-        Unet Forward pass
-        '''
-        out = self.up_s(layer1)
-        out = self.conv_t(torch.cat((layer2, out), dim=1))
+    def forward(self, x1, x2):
+        out = self.up_s(x1)
+        out = self.convT(torch.cat((x2, out), dim=1))
         return out
 
 
 class Unet(nn.Module):
-    '''
-    Unet class for segmentation of pocket structures.
-    '''
     def __init__(self, n_classes, upsample):
         super().__init__()
         self.n_classes = n_classes
@@ -91,18 +62,17 @@ class Unet(nn.Module):
         self.up4 = Up(64, 32, 3, upsample=upsample)
         self.conv = nn.Conv3d(32, self.n_classes, 1)
 
-    def forward(self, layer):
-        '''
-        Unet Forward propagation from input to output
-        '''
-        layer1 = self.in1(layer)
-        layer2 = self.down1(layer1)
-        layer3 = self.down2(layer2)
-        layer4 = self.down3(layer3)
-        layer5 = self.down4(layer4)
-        layer = self.up1(layer5, layer4)
-        layer = self.up2(layer, layer3)
-        layer = self.up3(layer, layer2)
-        layer = self.up4(layer, layer1)
-        logits = self.conv(layer)
+    def forward(self, x):
+        x1 = self.in1(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
+        x = self.up1(x5, x4)
+        x = self.up2(x, x3)
+        x = self.up3(x, x2)
+        x = self.up4(x, x1)
+        logits = self.conv(x)
         return logits
+
+
