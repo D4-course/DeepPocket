@@ -2,6 +2,8 @@
 # Team 12
 - Viswanadh  2019112011
 - Siva Durga 2019102038
+
+## Video Presentation Link: [https://youtu.be/6AhVUTDhPGo](https://youtu.be/6AhVUTDhPGo)
 ## Requirements: 
 - Docker
 - CUDA >11.6
