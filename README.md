@@ -1,5 +1,7 @@
 # DeepPocket: Ligand Binding Site Detection and Segmentation using 3D Convolutional Neural Networks
-
+# Team 12
+- Viswanadh  2019112011
+- Siva Durga 2019102038
 ## Requirements: 
 - Docker
 - CUDA >11.6
